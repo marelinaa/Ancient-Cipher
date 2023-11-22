@@ -18,11 +18,9 @@ public class MainForm extends JFrame {
     private JScrollPane scrollPane;
     public File[] files;
     public ArrayList<File> correctTests;
+    public int n;
     public File selectedDirectory;
     JFileChooser fileChooser = new JFileChooser();
-    public void AppendTextArea(String str) {
-        textArea.append(str);
-    }
 
     public MainForm(){
         setContentPane(mainPanel);
@@ -52,6 +50,7 @@ public class MainForm extends JFrame {
         startButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                correctTests = new ArrayList<>();
                 startProcessing();
             }
         });
@@ -65,29 +64,31 @@ public class MainForm extends JFrame {
             return;
         }
 
-        files = selectedDirectory.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.toLowerCase().endsWith(".in");
-            }
-        });
+        files = selectedDirectory.listFiles((dir, name) -> name.toLowerCase().endsWith(".in"));
 
         if (files.length == 0 ) {
             JOptionPane.showMessageDialog(null, "There are no .in files in chosen directory.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
+        n = files.length;
+
 
         TestCheckerThread testCheckerThread = new TestCheckerThread(this);
-        textArea.append(testCheckerThread.getName() + " ---> " + testCheckerThread.getState().toString()+ "\n");
+        ProblemSolverThread problemSolverThread = new ProblemSolverThread(this);
         testCheckerThread.start();
-        textArea.append(testCheckerThread.getName() + " ---> " + testCheckerThread.getState().toString()+ "\n");
-
+        problemSolverThread.start();
+        try {
+            problemSolverThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         try {
             testCheckerThread.join();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
         textArea.append(testCheckerThread.getName() + " ---> " + testCheckerThread.getState().toString()+ "\n\n");
 
 //
